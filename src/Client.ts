@@ -1,17 +1,17 @@
-import { createReadStream, createWriteStream, mkdir, readdir, stat, open, close, unlink } from "fs"
+import { close, createReadStream, createWriteStream, mkdir, open, readdir, stat, unlink } from "fs"
 import { join } from "path"
 import { Readable, Writable } from "stream"
-import { connect as connectTLS, ConnectionOptions as TLSConnectionOptions } from "tls"
+import { ConnectionOptions as TLSConnectionOptions, connect as connectTLS } from "tls"
 import { promisify } from "util"
 import { FileInfo } from "./FileInfo"
 import { FTPContext, FTPError, FTPResponse } from "./FtpContext"
-import { parseList as parseListAutoDetect } from "./parseList"
 import { ProgressHandler, ProgressTracker } from "./ProgressTracker"
 import { StringWriter } from "./StringWriter"
-import { parseMLSxDate } from "./parseListMLSD"
 import { describeAddress, describeTLS, upgradeSocket } from "./netUtils"
-import { uploadFrom, downloadTo, enterPassiveModeIPv6, enterPassiveModeIPv4, UploadCommand } from "./transfer"
 import { isMultiline, positiveCompletion } from "./parseControlResponse"
+import { parseList as parseListAutoDetect } from "./parseList"
+import { parseMLSxDate } from "./parseListMLSD"
+import { UploadCommand, downloadTo, enterPassiveModeIPv4, enterPassiveModeIPv6, uploadFrom } from "./transfer"
 
 // Use promisify to keep the library compatible with Node 8.
 const fsReadDir = promisify(readdir)
@@ -548,6 +548,34 @@ export class Client {
     }
 
     /**
+     * Get the FileInfo for a file or directory itself. 
+     * Relies on the LIST -d command which is not standardized and may not work with all servers.
+     */
+    async stat(path: string=""): Promise<FileInfo | undefined> {
+        return new Promise<FileInfo | undefined>((resolve, reject) => {
+            this._requestListWithCommand(path === "" ? `LIST -d` : `LIST -d ${path}`, this.parseList).then(list => {
+                resolve(list[0])
+            }).catch(err => {
+                reject(err)
+            })
+        })
+    }
+
+    /**
+     * List the names of the files and directories in the current working directory, or from `path` if specified.
+     * Relies on the NLST command which is not standardized and may not work with all servers.
+     */
+    async nlist(path: string=""): Promise<string[]> {
+        return new Promise<string[]>((resolve, reject) => {
+            this._requestListWithCommand(path === "" ? `NLST` : `NLST ${path}`, text => text.split(/\r?\n/).filter(l => l)).then(list => {
+                resolve(list)
+            }).catch(err => {
+                reject(err)
+            })
+        })
+    }
+
+    /**
      * List files and directories in the current working directory, or from `path` if specified.
      *
      * @param [path]  Path to remote file or directory.
@@ -559,7 +587,7 @@ export class Client {
             const command = validPath === "" ? candidate : `${candidate} ${validPath}`
             await this.prepareTransfer(this.ftp)
             try {
-                const parsedList = await this._requestListWithCommand(command)
+                const parsedList = await this._requestListWithCommand(command, this.parseList)
                 // Use successful candidate for all subsequent requests.
                 this.availableListCommands = [ candidate ]
                 return parsedList
@@ -578,7 +606,7 @@ export class Client {
     /**
      * @protected
      */
-    protected async _requestListWithCommand(command: string): Promise<FileInfo[]> {
+    protected async _requestListWithCommand<T>(command: string, parseFunc: (text: string) => T[]): Promise<T[]> {
         const buffer = new StringWriter()
         await downloadTo(buffer, {
             ftp: this.ftp,
@@ -589,7 +617,7 @@ export class Client {
         })
         const text = buffer.getText(this.ftp.encoding)
         this.ftp.log(text)
-        return this.parseList(text)
+        return parseFunc(text)
     }
 
     /**
