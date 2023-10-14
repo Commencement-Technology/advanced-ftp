@@ -221,7 +221,7 @@ export class FTPContext {
      * Send an FTP command without waiting for or handling the result.
      */
     send(command: string) {
-        if(this._socket) {
+        if(this._socket && this._socket.writable) {
             const containsPassword = command.startsWith("PASS")
             const message = containsPassword ? "> PASS ###" : `> ${command}`
             this.log(message)
