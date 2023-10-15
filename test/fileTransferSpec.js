@@ -48,9 +48,8 @@ describe("Download to a file", function() {
     })
 
     it("can download to a new, not yet existing file", async () => {
-        await this.client.downloadTo(NEW_LOCAL_FILENAME, REMOTE_FILENAME).catch(console.log)
+        await this.client.downloadTo(NEW_LOCAL_FILENAME, REMOTE_FILENAME)
         const content = fs.readFileSync(NEW_LOCAL_FILENAME, "utf-8")
-        console.log(content)
         assert.equal(content, SHORT_TEXT)
     })
 
