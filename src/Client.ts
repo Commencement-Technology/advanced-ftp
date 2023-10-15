@@ -551,7 +551,7 @@ export class Client {
      * Get the FileInfo for a file or directory itself. 
      * Relies on the LIST -d command which is not standardized and may not work with all servers.
      */
-    async stat(path: string=""): Promise<FileInfo | undefined> {
+    async stat(path =""): Promise<FileInfo | undefined> {
         return new Promise<FileInfo | undefined>((resolve, reject) => {
             this._requestListWithCommand(path === "" ? `LIST -d` : `LIST -d ${path}`, this.parseList).then(list => {
                 resolve(list[0])
@@ -565,7 +565,7 @@ export class Client {
      * List the names of the files and directories in the current working directory, or from `path` if specified.
      * Relies on the NLST command which is not standardized and may not work with all servers.
      */
-    async nlist(path: string=""): Promise<string[]> {
+    async nlist(path =""): Promise<string[]> {
         return new Promise<string[]>((resolve, reject) => {
             this._requestListWithCommand(path === "" ? `NLST` : `NLST ${path}`, text => text.split(/\r?\n/).filter(l => l)).then(list => {
                 resolve(list)
