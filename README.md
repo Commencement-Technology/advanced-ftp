@@ -1,10 +1,12 @@
-# Basic FTP
+# Advanced FTP
 
-[![npm version](https://img.shields.io/npm/v/basic-ftp.svg)](https://www.npmjs.com/package/basic-ftp)
+<!--[![npm version](https://img.shields.io/npm/v/basic-ftp.svg)](https://www.npmjs.com/package/basic-ftp)
 [![npm downloads](https://img.shields.io/npm/dw/basic-ftp)](https://www.npmjs.com/package/basic-ftp)
-[![Node.js CI](https://github.com/patrickjuchli/basic-ftp/actions/workflows/nodejs.yml/badge.svg)](https://github.com/patrickjuchli/basic-ftp/actions/workflows/nodejs.yml)
+[![Node.js CI](https://github.com/patrickjuchli/basic-ftp/actions/workflows/nodejs.yml/badge.svg)](https://github.com/patrickjuchli/basic-ftp/actions/workflows/nodejs.yml)-->
 
 This is an FTP client library for Node.js. It supports FTPS over TLS, Passive Mode over IPv6, has a Promise-based API, and offers methods to operate on whole directories.
+
+It is a fork of [basic-ftp](https://github.com/patrickjuchli/basic-ftp) aiming to add more features (Queueing, non-stadard commands...) and fix some bugs.
 
 ## Advisory
 
@@ -16,7 +18,7 @@ Node 10.0 or later is the only dependency.
 
 ## Installation
 
-`npm install basic-ftp`
+`npm install https://github.com/RythenGlyth/advanced-ftp`
 
 ## Usage
 
@@ -114,6 +116,10 @@ Get the path of the current working directory.
 
 List files and directories in the current working directory, or at `path` if specified. Currently, this library only supports MLSD, Unix and DOS directory listings. See [FileInfo](src/FileInfo.ts) for more details.
 
+`nlist([path]): Promise<string>`
+
+List the names of files and directories in the current working directory, or at `path` if specified. This command might not be supported by your FTP server and throw an exception.
+
 `lastMod(path): Promise<Date>`
 
 Get the last modification time of a file. This command might not be supported by your FTP server and throw an exception.
@@ -121,6 +127,10 @@ Get the last modification time of a file. This command might not be supported by
 `size(path): Promise<number>`
 
 Get the size of a file in bytes.
+
+`stat([path]): Promise<FileInfo | undefined>`
+
+Get information about the current working directory, or a file or directory at `path` if specified. This command might not be supported by your FTP server and throw an exception as it requires the server to parse "LIST -d" command.
 
 `rename(path, newPath): Promise<FTPResponse>`
 
