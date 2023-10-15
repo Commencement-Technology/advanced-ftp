@@ -11,6 +11,7 @@ module.exports = class SocketMock extends EventEmitter {
         this.timeout = -1;
         this.remoteAddress = undefined
         this.localPort = ++counter
+        this.writable = true
     }
     connect() {
         this.remoteAddress = "somewhere"
