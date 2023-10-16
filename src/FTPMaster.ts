@@ -104,7 +104,7 @@ export class FTPMaster {
     }
 
     private async try_dequeue(): Promise<boolean> {
-        var client = this.clients.find(x => !x.inUse);
+        var client = this.clients.find(x => !x.inUse && !x.client.closed);
         if(!client) return false;
         
         const item = this.queue.shift();
