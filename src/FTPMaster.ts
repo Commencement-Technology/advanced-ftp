@@ -53,10 +53,22 @@ export class FTPMaster {
                 inUse: false,
             });
         }
+
+        // Sort clients by priority
+        this.clients.sort((a, b) => {
+            if(a.client.closed) return -2;
+            if(!a.inUse) return -1;
+            if(!b.inUse) return 1;
+            if(b.client.closed) return 2;
+            return 0;
+        });
+
         for(var i = this.maxConnections; i < this.clients.length; i++) {
             this.clients[i].client.close();
         }
         this.clients = this.clients.slice(0, this.maxConnections);
+        this.clients.reverse();
+
         if(this.autoReconnect) {
             this.connectClients();
         }
