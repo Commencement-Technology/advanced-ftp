@@ -72,10 +72,14 @@ export class FTPMaster {
         if(client.closed) {
             await client.access(this.accessOptions);
             client.ftp.socket.on("close", () => {
-                this.connectClient(client)
+                if(this.autoReconnect) {
+                    this.connectClient(client)
+                }
             })
             client.ftp.socket.on("end", () => {
-                this.connectClient(client)
+                if(this.autoReconnect) {
+                    this.connectClient(client)
+                }
             })
         }
     }
@@ -99,7 +103,7 @@ export class FTPMaster {
         });
     }
 
-    public async try_dequeue(): Promise<boolean> {
+    private async try_dequeue(): Promise<boolean> {
         var client = this.clients.find(x => !x.inUse);
         if(!client) return false;
         

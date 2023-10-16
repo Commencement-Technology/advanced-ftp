@@ -22,41 +22,37 @@ Node 10.0 or later is the only dependency.
 
 ## Usage
 
-The first example will connect to an FTP server using TLS (FTPS), get a directory listing, upload a file and download it as a copy. Note that the FTP protocol doesn't allow multiple requests running in parallel.
+The first example will connect to an FTP server using TLS (FTPS), get a directory listing, upload a file and download it as a copy. Note that the FTP protocol doesn't allow multiple requests running in parallel. When using the `FTPMaster` class, all requests are queued and executed one after another. This is useful for complicated workflows where you want to make sure that one request is finished before the next one starts. If you don't need this, you can use the `Client` class directly (as in [basic-ftp](https://github.com/patrickjuchli/basic-ftp)).
 
 ```js
-const ftp = require("basic-ftp") 
-// ESM: import * as ftp from "basic-ftp"
+const ftp = require("advanced-ftp") 
+// ESM: import * as ftp from "advanced-ftp"
 
 example()
 
 async function example() {
-    const client = new ftp.Client()
-    client.ftp.verbose = true
-    try {
-        await client.access({
-            host: "myftpserver.com",
-            user: "very",
-            password: "password",
-            secure: true
-        })
-        console.log(await client.list())
-        await client.uploadFrom("README.md", "README_FTP.md")
-        await client.downloadTo("README_COPY.md", "README_FTP.md")
-    }
-    catch(err) {
-        console.log(err)
-    }
-    client.close()
+    const master = new ftp.FTPMaster({
+        host: "myftpserver.com",
+        user: "very",
+        password: "password",
+        secure: true
+    })
+    master.clients[0].client.ftp.verbose = true
+    
+    master.enqueue(client => client.list()).then(console.log).catch(console.log)
+    await master.enqueue(client => client.uploadFrom("README.md", "README_FTP.md")).catch(console.log)
+    await master.enqueue(client => client.downloadTo("README_COPY.md", "README_FTP.md")).catch(console.log)
+
+    master.enqueue(client => client.close()).catch(console.log)
 }
 ```
 
 The next example deals with directories and their content. First, we make sure a remote path exists, creating all directories as necessary. Then, we make sure it's empty and upload the contents of a local directory.
 
 ```js
-await client.ensureDir("my/remote/directory")
-await client.clearWorkingDir()
-await client.uploadFromDir("my/local/directory")
+await master.enqueue(client => client.ensureDir("my/remote/directory"))
+await master.enqueue(client => client.clearWorkingDir())
+await master.enqueue(client => client.uploadFromDir("my/local/directory"))
 ```
 
 If you encounter a problem, it may help to log out all communication with the FTP server.
@@ -64,6 +60,30 @@ If you encounter a problem, it may help to log out all communication with the FT
 ```js
 client.ftp.verbose = true
 ```
+
+## FTPMaster API
+
+`new FTPMaster(accessOptions: AccessOptions, [maxConnections: number = 1], [autoReconnect: boolean = true])`
+
+Create a master instance. Configure it with the AccessOptions for every client (see `Client#access` for details), the maximum number of connections (Clients) to the server and whether to automatically reconnect when the connection is lost. The default is 1 connection and auto reconnect.
+
+The clients will be connected when calling `connectClients()` or automatically if `autoReconnect`.
+
+`connectClients(): Promise<void>`
+
+Reconnect all clients.
+
+`enqueue(task: (client: Client) => Promise<T>, [priority: boolean = false]): Promise<T>`
+
+Adds a task to the queue. The task will be executed when a client is available. If no client is available, the task will be executed when a client is released. If `priority` is true, the task will be executed as soon as possible otherwise the task will be executed in the order they were added to the queue.
+
+`autoReconnect = value: boolean`
+
+Set whether to automatically reconnect when the connection is lost. If true, the master will try to reconnect every client (see `FTPMaster#connectClients`). Default is true.
+
+`maxConnections = value: number`
+
+Set the maximum number of connections (Clients) to the server. If the number of connections is greater than the maximum, the master will close those connections, prefering the ones with no running tasks but forcing the ones with running tasks to close if necessary. New connections will be opened if `FTPMaster#autoReconnect` is true. Default is 1.
 
 ## Client API
 
