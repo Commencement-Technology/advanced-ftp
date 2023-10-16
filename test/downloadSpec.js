@@ -4,6 +4,7 @@ const { StringWriter } = require("../dist/StringWriter");
 const MockFtpServer = require("./MockFtpServer");
 const { Writable } = require("stream")
 const fs = require("fs");
+const { Socket } = require("net");
 
 const FILENAME = "file.txt"
 const TIMEOUT = 1000
@@ -147,6 +148,12 @@ describe("Download to stream", function() {
         dataSocket.destroy(new Error("Error that should be ignored because task has completed successfully"))
     })
     it("handles early data socket closure", async () => {
+        /**
+         * type of this.client
+         * @type {Client}
+         */
+        this.client;
+
         this.server.addHandlers({
             "pasv": () => `227 Entering Passive Mode (${this.server.dataAddressForPasvResponse})`,
             "retr": ({arg})  => {
