@@ -49,20 +49,20 @@ describe("Download to a file", function() {
 
     it("can download to a new, not yet existing file", async () => {
         await this.client.downloadTo(NEW_LOCAL_FILENAME, REMOTE_FILENAME)
-        const content = fs.readFileSync(NEW_LOCAL_FILENAME, "utf-8")
+        const content = fs.readFileSync(NEW_LOCAL_FILENAME).toString("utf-8")
         assert.equal(content, SHORT_TEXT)
     })
 
     it("truncates existing file with startAt=0", async () => {
         await this.client.downloadTo(EXISTING_LOCAL_FILENAME, REMOTE_FILENAME)
-        const content = fs.readFileSync(EXISTING_LOCAL_FILENAME, "utf-8")
+        const content = fs.readFileSync(EXISTING_LOCAL_FILENAME).toString("utf-8")
         assert.equal(content, SHORT_TEXT)
     })
 
     it("appends to existing file with start>0", async () => {
         const startAt = 4
         await this.client.downloadTo(EXISTING_LOCAL_FILENAME, REMOTE_FILENAME, startAt)
-        const content = fs.readFileSync(EXISTING_LOCAL_FILENAME, "utf-8")
+        const content = fs.readFileSync(EXISTING_LOCAL_FILENAME).toString("utf-8")
         assert.equal(content, "cont" + SHORT_TEXT.substring(startAt))
     })
 
