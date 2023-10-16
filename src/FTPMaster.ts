@@ -8,13 +8,43 @@ interface QueuedFTPTask<T = any> {
 
 export class FTPMaster {
     private accessOptions: AccessOptions;
-    private maxConnections: number;
+    private _maxConnections: number;
+    private _autoReconnect: boolean;
     private queue: QueuedFTPTask[] = [];
-    public readonly clients: {client: Client, inUse: boolean}[] = [];
+    private _clients: {client: Client, inUse: boolean}[] = [];
 
-    constructor(accessOptions: AccessOptions, maxConnections: number = 1) {
+    constructor(accessOptions: AccessOptions, maxConnections: number = 1, autoReconnect: boolean = true) {
         this.accessOptions = accessOptions;
+        this._autoReconnect = autoReconnect;
+        this._maxConnections = maxConnections;
         this.maxConnections = maxConnections;
+    }
+
+    public get clients(): {client: Client, inUse: boolean}[] {
+        return this._clients;
+    }
+
+    private set clients(clients: {client: Client, inUse: boolean}[]) {
+        this._clients = clients;
+    }
+
+    public get autoReconnect(): boolean {
+        return this._autoReconnect;
+    }
+
+    public set autoReconnect(autoReconnect: boolean) {
+        this._autoReconnect = autoReconnect;
+        if(autoReconnect) {
+            this.connectClients();
+        }
+    }
+
+    public get maxConnections(): number {
+        return this._maxConnections;
+    }
+
+    public set maxConnections(maxConnections: number) {
+        this._maxConnections = maxConnections;
 
         for(var i = 0; i < this.maxConnections; i++) {
             var client = new Client();
@@ -22,6 +52,13 @@ export class FTPMaster {
                 client,
                 inUse: false,
             });
+        }
+        for(var i = this.maxConnections; i < this.clients.length; i++) {
+            this.clients[i].client.close();
+        }
+        this.clients = this.clients.slice(0, this.maxConnections);
+        if(this.autoReconnect) {
+            this.connectClients();
         }
     }
 

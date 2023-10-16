@@ -6,7 +6,7 @@
 
 This is an FTP client library for Node.js. It supports FTPS over TLS, Passive Mode over IPv6, has a Promise-based API, and offers methods to operate on whole directories.
 
-It is a fork of [basic-ftp](https://github.com/patrickjuchli/basic-ftp) aiming to add more features (Queueing, non-stadard commands...) and fix some bugs.
+It is a fork of [basic-ftp](https://github.com/patrickjuchli/basic-ftp) aiming to add more features (FTPMaster with queueing and auto reconnect, non-stadard commands...) and fix some bugs.
 
 ## Advisory
 
