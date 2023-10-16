@@ -10,7 +10,7 @@ export class FTPMaster {
     private accessOptions: AccessOptions;
     private maxConnections: number;
     private queue: QueuedFTPTask[] = [];
-    private clients: {client: Client, inUse: boolean}[] = [];
+    public readonly clients: {client: Client, inUse: boolean}[] = [];
 
     constructor(accessOptions: AccessOptions, maxConnections: number = 1) {
         this.accessOptions = accessOptions;
