@@ -1,5 +1,5 @@
 {
-  "name": "basic-ftp",
+  "name": "advanced-ftp",
   "version": "5.0.3",
   "description": "FTP client for Node.js, supports FTPS over TLS, IPv6, Async/Await, and Typescript.",
   "main": "dist/index",
@@ -20,9 +20,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/patrickjuchli/basic-ftp.git"
+    "url": "https://github.com/RythenGlyth/advanced-ftp.git"
   },
-  "author": "Patrick Juchli <patrickjuchli@gmail.com>",
+  "contributors": [
+    "Patrick Juchli <patrickjuchli@gmail.com>",
+    "RythenGlyth <rythenglyth@gmail.com>"
+  ],
   "license": "MIT",
   "keywords": [
     "ftp",
