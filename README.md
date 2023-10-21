@@ -18,7 +18,7 @@ Node 10.0 or later is the only dependency.
 
 ## Installation
 
-`npm install https://github.com/RythenGlyth/advanced-ftp`
+`npm install advanced-ftp`
 
 ## Usage
 
