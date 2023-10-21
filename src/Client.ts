@@ -735,14 +735,18 @@ export class Client {
      * Make sure a given remote path exists, creating all directories as necessary.
      * This function also changes the current working directory to the given path.
      */
-    async ensureDir(remoteDirPath: string): Promise<void> {
+    async ensureDir(remoteDirPath: string, recursive = true): Promise<void> {
         // If the remoteDirPath was absolute go to root directory.
         if (remoteDirPath.startsWith("/")) {
             await this.cd("/")
         }
-        const names = remoteDirPath.split("/").filter(name => name !== "")
-        for (const name of names) {
-            await this._openDir(name)
+        if(recursive) {
+            const names = remoteDirPath.split("/").filter(name => name !== "")
+            for (const name of names) {
+                await this._openDir(name)
+            }
+        } else {
+            await this._openDir(remoteDirPath)
         }
     }
 
@@ -754,14 +758,6 @@ export class Client {
     protected async _openDir(dirName: string) {
         await this.sendIgnoringError("MKD " + dirName)
         await this.cd(dirName)
-    }
-
-    /**
-     * Remove an empty directory, will fail if not empty.
-     */
-    async mkdir(path: string): Promise<FTPResponse> {
-        const validPath = await this.protectWhitespace(path)
-        return this.send(`MKD ${validPath}`)
     }
 
     /**

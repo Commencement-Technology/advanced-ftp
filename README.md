@@ -178,9 +178,9 @@ Download a remote file and pipe its data to a writable stream or to a local file
 
 ---
 
-`ensureDir(remoteDirPath): Promise<void>`
+`ensureDir(remoteDirPath, [recursive=true]): Promise<void>`
 
-Make sure that the given `remoteDirPath` exists on the server, creating all directories as necessary. The working directory is at `remoteDirPath` after calling this method.
+Make sure that the given `remoteDirPath` exists on the server. If recursive, creating all directories as necessary. The working directory is at `remoteDirPath` after calling this method.
 
 `clearWorkingDir(): Promise<void>`
 
