@@ -20,6 +20,16 @@ export class FTPMaster {
         this.maxConnections = maxConnections;
     }
 
+    /**
+     * clear queue by rejecting all promises
+     */
+    public clearQueue() {
+        for(var i = 0; i < this.queue.length; i++) {
+            this.queue[i].reject("Queue cleared");
+        }
+        this.queue = [];
+    }
+
     public get clients(): {client: Client, inUse: boolean}[] {
         return this._clients;
     }

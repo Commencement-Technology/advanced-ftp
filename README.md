@@ -77,6 +77,10 @@ Reconnect all clients.
 
 Adds a task to the queue. The task will be executed when a client is available. If no client is available, the task will be executed when a client is released. If `priority` is true, the task will be executed as soon as possible otherwise the task will be executed in the order they were added to the queue.
 
+`clearQueue(): void`
+
+Clear the queue by rejecting all pending tasks.
+
 `autoReconnect = value: boolean`
 
 Set whether to automatically reconnect when the connection is lost. If true, the master will try to reconnect every client (see `FTPMaster#connectClients`). Default is true.
