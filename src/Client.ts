@@ -759,6 +759,14 @@ export class Client {
     /**
      * Remove an empty directory, will fail if not empty.
      */
+    async mkdir(path: string): Promise<FTPResponse> {
+        const validPath = await this.protectWhitespace(path)
+        return this.send(`MKD ${validPath}`)
+    }
+
+    /**
+     * Remove an empty directory, will fail if not empty.
+     */
     async removeEmptyDir(path: string): Promise<FTPResponse> {
         const validPath = await this.protectWhitespace(path)
         return this.send(`RMD ${validPath}`)
