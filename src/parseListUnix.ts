@@ -4,11 +4,27 @@ const JA_MONTH = "\u6708"
 const JA_DAY   = "\u65e5"
 const JA_YEAR  = "\u5e74"
 
+const MONTHS: { [key: string]: number } = {
+    "JAN": 0,
+    "FEB": 1,
+    "MAR": 2,
+    "APR": 3,
+    "MAY": 4,
+    "JUN": 5,
+    "JUL": 6,
+    "AUG": 7,
+    "SEP": 8,
+    "OCT": 9,
+    "NOV": 10,
+    "DEC": 11
+}
+
 /**
  * This parser is based on the FTP client library source code in Apache Commons Net provided
  * under the Apache 2.0 license. It has been simplified and rewritten to better fit the Javascript language.
  *
  * https://github.com/apache/commons-net/blob/master/src/main/java/org/apache/commons/net/ftp/parser/UnixFTPEntryParser.java
+ * https://github.com/apache/commons-net/blob/master/src/main/java/org/apache/commons/net/ftp/parser/FTPTimestampParserImpl.java
  *
  * Below is the regular expression used by this parser.
  *
@@ -80,6 +96,18 @@ const RE_LINE = new RegExp(
 
     + "(.*)") // the rest (21)
 
+const RECENT_DATE_REGEX = new RegExp(
+    "(?:(?:(\\w{3})\\s+(\\d{1,2}))" // MMM [d]d
+    + "|(?:(\\d{1,2})" + JA_MONTH + "\\s+(\\d{1,2})" + JA_DAY + "))" // [M]MX [D]DX
+    + "\\s+(\\d{1,2}):(\\d{2})" // HH:mm
+)
+
+const DEFAULT_DATE_REGEX = new RegExp(
+    "(?:(?:(\\w{3})\\s+(\\d{1,2}))" // MMM [d]d
+    + "|(?:(\\d{1,2})" + JA_MONTH + "\\s+(\\d{1,2})" + JA_DAY + "))" // [M]MX [D]DX
+    + "\\s+(\\d{4})" + JA_YEAR + "?" // yyyy
+)
+
 /**
  * Returns true if a given line might be a Unix-style listing.
  *
@@ -107,6 +135,28 @@ export function parseLine(line: string): FileInfo | undefined {
     file.group = groups[17]
     file.hardLinkCount = parseInt(groups[15], 10)
     file.rawModifiedAt = groups[19] + " " + groups[20]
+    //format rawModifiedAt depending on format. default format is "MMM d yyyy" or for recent files "MMM d HH:mm"
+    //add a day to "now" so that "slop" doesn't cause a date
+    // slightly in the future to roll back a full year. (Bug 35181 => NET-83)
+    let dateMatch
+    if((dateMatch = RECENT_DATE_REGEX.exec(file.rawModifiedAt))) {
+        const now = new Date(Date.now() + 24 * 60 * 60 * 1000)
+        const year = now.getFullYear()
+        const month = MONTHS[(dateMatch[1] || dateMatch[3]).toUpperCase()]
+        const day = parseInt(dateMatch[2] || dateMatch[4], 10)
+        const hour = parseInt(dateMatch[5], 10)
+        const minute = parseInt(dateMatch[6], 10)
+        file.modifiedAt = new Date(year, month, day, hour, minute)
+        if (file.modifiedAt > now) {
+            file.modifiedAt = new Date(year - 1, month, day, hour, minute)
+        }
+    } else if((dateMatch = DEFAULT_DATE_REGEX.exec(file.rawModifiedAt))) {
+        const year = parseInt(dateMatch[5], 10)
+        const month = MONTHS[(dateMatch[1] || dateMatch[3]).toUpperCase()]
+        const day = parseInt(dateMatch[2] || dateMatch[4], 10)
+        file.modifiedAt = new Date(year, month, day)
+    }
+
     file.permissions = {
         user: parseMode(groups[4], groups[5], groups[6]),
         group: parseMode(groups[8], groups[9], groups[10]),

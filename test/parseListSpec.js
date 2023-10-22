@@ -11,8 +11,8 @@ const listUnix = `
 total 112
  drwxr-xr-x+  11 patrick  staff    374 Dec 11 21:24 .
  drwxr-xr-x+  38 patrick  staff   1292 Dec 11 14:31 ..
-    -rw-r--r--+   1 patrick  staff   1057 Dec 11 14:35 LICENSE.txt
- drwxr-xr-x+   5 patrick  staff    170 Dec 11 17:24 lib
+    -rw-r--r--+   1 patrick  staff   1057 Dec 31 14:35 LICENSE.txt
+ drwxr-xr-x+   5 patrick  staff    170 Dec 11 2003 lib
 
 
 ` // keep the empty lines
@@ -23,8 +23,12 @@ dr-xr-xr-x    3 1001     1001         4096 Feb 25 18:55 ..
 -rw-------    1 1001     1001          487 Feb 25 19:03 package.json`
 
 const listDOS = `
-12-05-96  05:03PM       <DIR>          myDir
-11-14-97  04:21PM                  953 MYFILE.INI`
+12-05-96   05:03PM       <DIR>          myDir
+11/14/97   04:21                    953 MYFILE.INI
+11-14-2001 04:21AM                  262 .Incomplete
+11-14-01   04:21PM                 9999 A.FiLE
+14.11.97   04:21PM                12953 NO.FILE
+14.11.2001 04:21PM                12953 NO.FILE`
 
 describe("Directory listing", function() {
     let f;
@@ -248,7 +252,8 @@ describe("Directory listing", function() {
                     world: FileInfo.UnixPermission.Read
                 },
                 f.hardLinkCount = 1,
-                f.rawModifiedAt = "Dec 11 14:35",
+                f.rawModifiedAt = "Dec 31 14:35",
+                f.modifiedAt = new Date("Dec 31 14:35" + " " + (new Date().getFullYear() - 1)),
                 f.type = FileType.File,
                 f),
                 (f = new FileInfo("lib"),
@@ -261,7 +266,8 @@ describe("Directory listing", function() {
                     world: FileInfo.UnixPermission.Read + FileInfo.UnixPermission.Execute
                 },
                 f.hardLinkCount = 5,
-                f.rawModifiedAt = "Dec 11 17:24",
+                f.rawModifiedAt = "Dec 11 2003",
+                f.modifiedAt = new Date("Dec 11 2003"),
                 f.type = FileType.Directory,
                 f),
             ]
@@ -281,6 +287,7 @@ describe("Directory listing", function() {
                 },
                 f.hardLinkCount = 1,
                 f.rawModifiedAt = "Feb 25 19:03",
+                f.modifiedAt = new Date("Feb 25 19:03" + " " + new Date().getFullYear()),
                 f.type = FileType.File,
                 f)
             ]
@@ -292,13 +299,39 @@ describe("Directory listing", function() {
                 (f = new FileInfo("myDir"),
                 f.size = 0,
                 f.rawModifiedAt = "12-05-96 05:03PM",
+                f.modifiedAt = new Date("12-05-96 17:03"),
                 f.type = FileType.Directory,
                 f),
                 (f = new FileInfo("MYFILE.INI"),
                 f.size = 953,
-                f.rawModifiedAt = "11-14-97 04:21PM",
+                f.rawModifiedAt = "11/14/97 04:21",
+                f.modifiedAt = new Date("11-14-97 04:21"),
                 f.type = FileType.File,
                 f),
+                (f = new FileInfo(".Incomplete"),
+                f.size = 262,
+                f.rawModifiedAt = "11-14-2001 04:21AM",
+                f.modifiedAt = new Date("11-14-2001 04:21"),
+                f.type = FileType.File,
+                f),
+                (f = new FileInfo("A.FiLE"),
+                f.size = 9999,
+                f.rawModifiedAt = "11-14-01 04:21PM",
+                f.modifiedAt = new Date("11-14-01 16:21"),
+                f.type = FileType.File,
+                f),
+                (f = new FileInfo("NO.FILE"),
+                f.size = 12953,
+                f.rawModifiedAt = "14.11.97 04:21PM",
+                f.modifiedAt = new Date("11-14-97 16:21"),
+                f.type = FileType.File,
+                f),
+                (f = new FileInfo("NO.FILE"),
+                f.size = 12953,
+                f.rawModifiedAt = "14.11.2001 04:21PM",
+                f.modifiedAt = new Date("11-14-2001 16:21"),
+                f.type = FileType.File,
+                f)
             ]
         },
         {
@@ -328,6 +361,7 @@ describe("Directory listing", function() {
                 (f = new FileInfo("Directory1"),
                 f.size = 0,
                 f.rawModifiedAt = "Apr 21 19:31",
+                f.modifiedAt = new Date("Apr 21 19:31" + " " + new Date().getFullYear()),
                 f.type = FileType.Directory,
                 f.group = "root",
                 f.user = "root",

@@ -2,13 +2,13 @@ import { FileInfo, FileType } from "./FileInfo"
 
 /**
  * This parser is based on the FTP client library source code in Apache Commons Net provided
- * under the Apache 2.0 license. It has been simplified and rewritten to better fit the Javascript language.
+ * under the Apache 2.0 license. It has been simplified, modified and rewritten to better fit the Javascript language.
  *
  * https://github.com/apache/commons-net/blob/master/src/main/java/org/apache/commons/net/ftp/parser/NTFTPEntryParser.java
  */
 
 const RE_LINE = new RegExp(
-    "(\\S+)\\s+(\\S+)\\s+"          // MM-dd-yy whitespace hh:mma|kk:mm swallow trailing spaces
+    "((?:(\\d{1,2})\\.(\\d{1,2})\\.(\\d{1,4}))|(?:(\\d{1,2})-(\\d{1,2})-(\\d{1,4}))|(?:(\\d{1,2})/(\\d{1,2})\\/(\\d{1,4})))\\s+((\\d{1,2}):(\\d{1,2})([aA][mM])?([pP][mM])?)\\s+"          // dd.MM.yy|MM-dd-yy|MM/dd/yy whitespace hh:mma|kk:mm swallow trailing spaces
     + "(?:(<DIR>)|([0-9]+))\\s+"    // <DIR> or ddddd swallow trailing spaces
     + "(\\S.*)"                     // First non-space followed by rest of line (name)
 )
@@ -30,21 +30,30 @@ export function parseLine(line: string): FileInfo | undefined {
     if (groups === null) {
         return undefined
     }
-    const name = groups[5]
+    const name = groups[18]
     if (name === "." || name === "..") { // Ignore parent directory links
         return undefined
     }
     const file = new FileInfo(name)
-    const fileType = groups[3]
+    const fileType = groups[16]
     if (fileType === "<DIR>") {
         file.type = FileType.Directory
         file.size = 0
     }
     else {
         file.type = FileType.File
-        file.size = parseInt(groups[4], 10)
+        file.size = parseInt(groups[17], 10)
     }
-    file.rawModifiedAt = groups[1] + " " + groups[2]
+    file.rawModifiedAt = groups[1] + " " + groups[11]
+    const month = groups[3] || groups[5] || groups[8]
+    const day = groups[2] || groups[6] || groups[9]
+    const year = groups[4] || groups[7] || groups[10]
+    let hours = groups[12]
+    const minutes = groups[13]
+    if(groups[15]) {
+        hours = parseInt(hours, 10) + 12 + ""
+    }
+    file.modifiedAt = new Date(month + "-" + day + "-" + year + " " + hours + ":" + minutes)
     return file
 }
 
