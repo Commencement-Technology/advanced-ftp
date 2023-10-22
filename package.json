@@ -30,12 +30,19 @@
   "keywords": [
     "ftp",
     "ftps",
+    "secure",
     "promise",
     "async",
     "await",
     "tls",
     "ipv6",
-    "typescript"
+    "typescript",
+    "queue",
+    "queuing",
+    "queueing",
+    "autoreconnect",
+    "auto-reconnect",
+    "reconnect"
   ],
   "engines": {
     "node": ">=10.0.0"
