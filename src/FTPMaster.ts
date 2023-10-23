@@ -103,6 +103,7 @@ export class FTPMaster {
                     this.connectClient(client)
                 }
             })
+            this.try_dequeue()
         }
     }
 
