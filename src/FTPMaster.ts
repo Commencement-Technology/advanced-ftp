@@ -88,13 +88,14 @@ export class FTPMaster {
     public async connectClients() {
         for(let i = 0; i < this.maxConnections; i++) {
             await this.connectClient(this.clients[i].client)
-            this.clients[i].inUse = false
         }
     }
 
     private async connectClient(client: Client) {
         if(client.closed) {
+            this.clients.find(x => x.client === client)!.inUse = true
             await client.access(this.accessOptions)
+            this.clients.find(x => x.client === client)!.inUse = false
             client.ftp.socket.on("close", () => {
                 if(this.autoReconnect) {
                     this.connectClient(client)
