@@ -283,7 +283,10 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
             resolver.onDataStart(config.remotePath, config.type)
             pipeline(
                 dataSocket,
-                new StopTransform(() => dataSocket?.destroy(), config.stopAt),
+                new StopTransform(() => {
+                    dataSocket?.push(null)
+                    dataSocket?.end()
+                }, config.stopAt),
                 destination, err => {
                 if (err) {
                     resolver.onError(task, err)
@@ -333,7 +336,7 @@ class StopTransform extends Transform {
     _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
         this.bytesWritten += chunk.length
         if (this.stopAt && this.bytesWritten >= this.stopAt) {
-            chunk.slice(0, this.stopAt - this.bytesWritten)
+            chunk = chunk.slice(0, this.stopAt - this.bytesWritten)
             this.close()
         }
         callback(null, chunk)
