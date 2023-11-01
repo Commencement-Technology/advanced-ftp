@@ -268,6 +268,13 @@ export function uploadFrom(source: Readable, config: TransferConfig): Promise<FT
                     }
                     dataSocket.write(chunk)
                 })
+                dataSocket.on("close", () => {
+                    if(endedIntentionally) {
+                        resolver.onDataDone(task)
+                    } else {
+                        resolver.onError(task, new Error("Data connection closed prematurely."))
+                    }
+                })
                 source.on("end", () => {
                     resolver.onDataDone(task)
                 })
@@ -329,6 +336,13 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
                     }
                 }
                 destination.write(chunk)
+            })
+            dataSocket.on("close", () => {
+                if(endedIntentionally) {
+                    resolver.onDataDone(task)
+                } else {
+                    resolver.onError(task, new Error("Data connection closed prematurely."))
+                }
             })
             dataSocket.on("end", () => {
                 resolver.onDataDone(task)
