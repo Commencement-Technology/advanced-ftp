@@ -3,7 +3,8 @@ import { AccessOptions, Client } from "./Client"
 interface QueuedFTPTask<T = any> {
     promise: (client: Client) => Promise<T>
     resolve: (value: T) => void
-    reject: (reason?: any) => void
+    reject: (reason?: any) => void,
+    stack: string | undefined
 }
 
 export class FTPMaster {
@@ -11,7 +12,7 @@ export class FTPMaster {
     private _maxConnections: number
     private _autoReconnect: boolean
     private queue: QueuedFTPTask[] = []
-    private _clients: {client: Client, inUse: boolean}[] = []
+    private _clients: {client: Client, inUse: boolean | string}[] = []
 
     constructor(accessOptions: AccessOptions, maxConnections = 1, autoReconnect = true) {
         this.accessOptions = accessOptions
@@ -30,11 +31,11 @@ export class FTPMaster {
         this.queue = []
     }
 
-    public get clients(): {client: Client, inUse: boolean}[] {
+    public get clients(): {client: Client, inUse: boolean | string}[] {
         return this._clients
     }
 
-    private set clients(clients: {client: Client, inUse: boolean}[]) {
+    private set clients(clients: {client: Client, inUse: boolean | string}[]) {
         this._clients = clients
     }
 
@@ -108,18 +109,21 @@ export class FTPMaster {
     }
 
     public enqueue<T = void>(promise: (client: Client) => Promise<T>, priority = false): Promise<T> {
+        let stack = new Error().stack
         return new Promise((resolve, reject) => {
             if(priority) {
                 this.queue.unshift({
                     promise,
                     resolve,
                     reject,
+                    stack
                 })
             } else {
                 this.queue.push({
                     promise,
                     resolve,
                     reject,
+                    stack
                 })
             }
             this.try_dequeue()
@@ -133,7 +137,7 @@ export class FTPMaster {
         const item = this.queue.shift()
         if (!item) return false
 
-        client.inUse = true
+        client.inUse = item.stack ?? true;
         item.promise(client.client).then((value) => {
             item.resolve(value)
         }).catch((err) => {
