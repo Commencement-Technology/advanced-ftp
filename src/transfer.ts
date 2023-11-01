@@ -281,45 +281,43 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
             }
             config.ftp.log(`Downloading from ${describeAddress(dataSocket)} (${describeTLS(dataSocket)})`)
             resolver.onDataStart(config.remotePath, config.type)
-            pipeline(
-                dataSocket,
-                new StopTransform(() => {
-                    dataSocket.removeAllListeners("timeout")
-                    dataSocket.removeAllListeners("error")
-                    dataSocket.on("error", () => {}) // ignore all errors from now on
-                    dataSocket.on("timeout", () => dataSocket.destroy())
-                    dataSocket.end()
-                }, config.stopAt),
-                destination, err => {
-                if (err) {
-                    resolver.onError(task, err)
-                } else {
-                    resolver.onDataDone(task)
+            // pipeline(
+            //     dataSocket,
+            //     new StopTransform(() => {
+            //         dataSocket.removeAllListeners("timeout")
+            //         dataSocket.removeAllListeners("error")
+            //         dataSocket.on("error", () => {}) // ignore all errors from now on
+            //         dataSocket.on("timeout", () => dataSocket.destroy())
+            //         dataSocket.end()
+            //     }, config.stopAt),
+            //     destination, err => {
+            //     if (err) {
+            //         resolver.onError(task, err)
+            //     } else {
+            //         resolver.onDataDone(task)
+            //     }
+            // })
+            let endedIntentionally = false
+            let bytesWritten = 0
+            dataSocket.on("data", (chunk) => {
+                if(config.stopAt) {
+                    bytesWritten += chunk.length
+                    if (bytesWritten >= config.stopAt) {
+                        chunk = chunk.slice(0, config.stopAt - bytesWritten)
+                        endedIntentionally = true
+                        dataSocket.end()
+                    }
                 }
             })
-            // let bytesWritten = 0
-            // dataSocket.on("data", (chunk) => {
-            //     if(config.stopAt) {
-            //         bytesWritten += chunk.length
-            //         if (bytesWritten >= config.stopAt) {
-            //             chunk = chunk.slice(0, config.stopAt - bytesWritten)
-            //             dataSocket.end()
-            //         }
-            //     }
-            //     console.log("data")
-            // })
-            // dataSocket.on("end", () => {
-            //     console.log("end")
-            //     resolver.onDataDone(task)
-            // })
-            // dataSocket.on("close", () => {
-            //     console.log("close")
-            //     dataSocket.destroy()
-            // })
-            // dataSocket.on("error", (err) => {
-            //     console.log("error")
-            //     resolver.onError(task, err)
-            // })
+            dataSocket.on("end", () => {
+                console.log("end")
+                resolver.onDataDone(task)
+            })
+            dataSocket.on("error", (err) => {
+                if(endedIntentionally) return
+                console.log("error")
+                resolver.onError(task, err)
+            })
         }
         else if (res.code === 350) { // Restarting at startAt.
             config.ftp.send("RETR " + config.remotePath)
