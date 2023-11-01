@@ -273,14 +273,23 @@ export function uploadFrom(source: Readable, config: TransferConfig): Promise<FT
                     dataSocket.write(chunk)
                 })
                 dataSocket.on("close", () => {
+                    source.destroy()
+                })
+                source.on("close", () => {
+                    if(!dataSocket.destroyed) dataSocket.destroy()
                     if(resolver.dataTransferDone) return
                     if(endedIntentionally) {
                         resolver.onDataDone(task)
                     } else {
-                        resolver.onError(task, new Error("Data connection closed prematurely."))
+                        resolver.onError(task, new Error("Premature close."))
                     }
                 })
+                source.on("timeout", () => {
+                    if(resolver.dataTransferDone) return
+                    resolver.onError(task, new Error("Timed out while uploading data."))
+                })
                 source.on("end", () => {
+                    dataSocket.end()
                     resolver.onDataDone(task)
                 })
                 source.on("error", (err) => {
@@ -342,15 +351,19 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
                 }
                 destination.write(chunk)
             })
+            destination.on("close", () => {
+                dataSocket.destroy()
+            })
             dataSocket.on("close", () => {
                 if(resolver.dataTransferDone) return
                 if(endedIntentionally) {
                     resolver.onDataDone(task)
                 } else {
-                    resolver.onError(task, new Error("Data connection closed prematurely."))
+                    resolver.onError(task, new Error("Premature close."))
                 }
             })
             dataSocket.on("end", () => {
+                destination.end()
                 resolver.onDataDone(task)
             })
             dataSocket.on("error", (err) => {
