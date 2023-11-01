@@ -553,6 +553,7 @@ export class Client {
      */
     async stat(path =""): Promise<FileInfo | undefined> {
         return new Promise<FileInfo | undefined>((resolve, reject) => {
+            await this.prepareTransfer(this.ftp)
             this._requestListWithCommand(path === "" ? `LIST -d` : `LIST -d ${path}`, this.parseList).then(list => {
                 resolve(list[0])
             }).catch(err => {
@@ -567,6 +568,7 @@ export class Client {
      */
     async nlist(path =""): Promise<string[]> {
         return new Promise<string[]>((resolve, reject) => {
+            await this.prepareTransfer(this.ftp)
             this._requestListWithCommand(path === "" ? `NLST` : `NLST ${path}`, text => text.split(/\r?\n/).filter(l => l)).then(list => {
                 resolve(list)
             }).catch(err => {
