@@ -540,8 +540,9 @@ export class Client {
                 remotePath: validPath,
                 type: "download"
             })
-        }
-        finally {
+        } catch(e) {
+            throw e
+        } finally {
             destination.removeListener("error", onError)
             destination.end()
         }
