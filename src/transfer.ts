@@ -134,7 +134,7 @@ class TransferResolver {
     protected _dataTransferDone = false
     
     public get dataTransferDone() {
-        return this._dataTransferDone;
+        return this._dataTransferDone
     }
 
     /**
@@ -228,12 +228,12 @@ export interface TransferConfig {
 export function uploadFrom(source: Readable, config: TransferConfig): Promise<FTPResponse> {
     const resolver = new TransferResolver(config.ftp, config.tracker)
     const fullCommand = `${config.command} ${config.remotePath}`
-    let endedIntentionally = false;
+    let endedIntentionally = false
     return config.ftp.handle(fullCommand, (res, task) => {
         if (res instanceof Error) {
             if(endedIntentionally && res instanceof FTPError && (res as FTPError).code == 426) { //handle 426 Data connection: Connection reset by peer
-                resolver.onControlDone(task, res);
-                return;
+                resolver.onControlDone(task, res)
+                return
             }
             resolver.onError(task, res)
         }
@@ -273,7 +273,7 @@ export function uploadFrom(source: Readable, config: TransferConfig): Promise<FT
                     dataSocket.write(chunk)
                 })
                 dataSocket.on("close", () => {
-                    if(resolver.dataTransferDone) return;
+                    if(resolver.dataTransferDone) return
                     if(endedIntentionally) {
                         resolver.onDataDone(task)
                     } else {
@@ -304,12 +304,12 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
         throw new Error("Download will be initiated but no data connection is available.")
     }
     const resolver = new TransferResolver(config.ftp, config.tracker)
-    let endedIntentionally = false;
+    let endedIntentionally = false
     return config.ftp.handle(config.command, (res, task) => {
         if (res instanceof Error) {
             if(endedIntentionally && res instanceof FTPError && (res as FTPError).code == 426) { //handle 426 Data connection: Connection reset by peer
-                resolver.onControlDone(task, res);
-                return;
+                resolver.onControlDone(task, res)
+                return
             }
             resolver.onError(task, res)
         }
@@ -343,7 +343,7 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
                 destination.write(chunk)
             })
             dataSocket.on("close", () => {
-                if(resolver.dataTransferDone) return;
+                if(resolver.dataTransferDone) return
                 if(endedIntentionally) {
                     resolver.onDataDone(task)
                 } else {

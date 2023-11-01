@@ -541,8 +541,6 @@ export class Client {
                 type: "download",
                 stopAt: length
             })
-        } catch(e) {
-            throw e
         } finally {
             destination.removeListener("error", onError)
             destination.end()
