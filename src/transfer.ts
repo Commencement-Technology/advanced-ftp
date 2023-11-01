@@ -227,7 +227,7 @@ export function uploadFrom(source: Readable, config: TransferConfig): Promise<FT
     let endedIntentionally = false;
     return config.ftp.handle(fullCommand, (res, task) => {
         if (res instanceof Error) {
-            if(endedIntentionally && res instanceof FTPError && (res as FTPError).code == 426) {
+            if(endedIntentionally && res instanceof FTPError && (res as FTPError).code == 426) { //handle 426 Data connection: Connection reset by peer
                 resolver.onControlDone(task, res);
                 return;
             }
@@ -295,7 +295,7 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
     let endedIntentionally = false;
     return config.ftp.handle(config.command, (res, task) => {
         if (res instanceof Error) {
-            if(endedIntentionally && res instanceof FTPError && (res as FTPError).code == 426) {
+            if(endedIntentionally && res instanceof FTPError && (res as FTPError).code == 426) { //handle 426 Data connection: Connection reset by peer
                 resolver.onControlDone(task, res);
                 return;
             }
