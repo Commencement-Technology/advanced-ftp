@@ -1,7 +1,7 @@
 import { EventEmitter } from "events"
 import { Readable, Writable } from "stream"
 import { TLSSocket, connect as connectTLS } from "tls"
-import { FTPContext, FTPResponse, TaskResolver } from "./FtpContext"
+import { FTPContext, FTPError, FTPResponse, TaskResolver } from "./FtpContext"
 import { ProgressTracker, ProgressType } from "./ProgressTracker"
 import { describeAddress, describeTLS, ipIsPrivateV4Address } from "./netUtils"
 import { positiveCompletion, positiveIntermediate } from "./parseControlResponse"
@@ -224,8 +224,13 @@ export interface TransferConfig {
 export function uploadFrom(source: Readable, config: TransferConfig): Promise<FTPResponse> {
     const resolver = new TransferResolver(config.ftp, config.tracker)
     const fullCommand = `${config.command} ${config.remotePath}`
+    let endedIntentionally = false;
     return config.ftp.handle(fullCommand, (res, task) => {
         if (res instanceof Error) {
+            if(endedIntentionally && res instanceof FTPError && (res as FTPError).code == 426) {
+                resolver.onControlDone(task, res);
+                return;
+            }
             resolver.onError(task, res)
         }
         else if (res.code === 150 || res.code === 125) { // Ready to upload
@@ -251,7 +256,6 @@ export function uploadFrom(source: Readable, config: TransferConfig): Promise<FT
                 //         resolver.onDataDone(task)
                 //     }
                 // })
-                let endedIntentionally = false
                 let bytesWritten = 0
                 source.on("data", (chunk) => {
                     if(config.stopAt) {
@@ -288,8 +292,13 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
         throw new Error("Download will be initiated but no data connection is available.")
     }
     const resolver = new TransferResolver(config.ftp, config.tracker)
+    let endedIntentionally = false;
     return config.ftp.handle(config.command, (res, task) => {
         if (res instanceof Error) {
+            if(endedIntentionally && res instanceof FTPError && (res as FTPError).code == 426) {
+                resolver.onControlDone(task, res);
+                return;
+            }
             resolver.onError(task, res)
         }
         else if (res.code === 150 || res.code === 125) { // Ready to download
@@ -309,7 +318,6 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
             //         resolver.onDataDone(task)
             //     }
             // })
-            let endedIntentionally = false
             let bytesWritten = 0
             dataSocket.on("data", (chunk) => {
                 if(config.stopAt) {
