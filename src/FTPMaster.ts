@@ -3,7 +3,7 @@ import { AccessOptions, Client } from "./Client"
 interface QueuedFTPTask<T = any> {
     promise: (client: Client) => Promise<T>
     resolve: (value: T) => void
-    reject: (reason?: any) => void,
+    reject: (reason?: any) => void
     stack: string | undefined
 }
 
@@ -109,7 +109,7 @@ export class FTPMaster {
     }
 
     public enqueue<T = void>(promise: (client: Client) => Promise<T>, priority = false): Promise<T> {
-        let stack = new Error().stack
+        const stack = new Error().stack
         return new Promise((resolve, reject) => {
             if(priority) {
                 this.queue.unshift({
@@ -137,7 +137,7 @@ export class FTPMaster {
         const item = this.queue.shift()
         if (!item) return false
 
-        client.inUse = item.stack ?? true;
+        client.inUse = item.stack ?? true
         item.promise(client.client).then((value) => {
             item.resolve(value)
         }).catch((err) => {
