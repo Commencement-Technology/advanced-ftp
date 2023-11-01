@@ -284,7 +284,11 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
             pipeline(
                 dataSocket,
                 new StopTransform(() => {
-                    config.ftp._closeSocket(dataSocket)
+                    dataSocket.removeAllListeners("timeout")
+                    dataSocket.removeAllListeners("error")
+                    dataSocket.on("error", () => {}) // ignore all errors from now on
+                    dataSocket.on("timeout", () => dataSocket.destroy())
+                    dataSocket.end()
                 }, config.stopAt),
                 destination, err => {
                 if (err) {

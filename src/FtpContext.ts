@@ -405,8 +405,9 @@ export class FTPContext {
 
     /**
      * Close a socket. Sends FIN and ignores any error.
+     * @protected
      */
-    public _closeSocket(socket: Socket | undefined) {
+    protected _closeSocket(socket: Socket | undefined) {
         if (socket) {
             this._removeSocketListeners(socket)
             socket.on("error", doNothing)
