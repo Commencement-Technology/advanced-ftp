@@ -552,14 +552,8 @@ export class Client {
      * Relies on the LIST -d command which is not standardized and may not work with all servers.
      */
     async stat(path =""): Promise<FileInfo | undefined> {
-        return new Promise<FileInfo | undefined>(async (resolve, reject) => {
-            await this.prepareTransfer(this.ftp)
-            this._requestListWithCommand(path === "" ? `LIST -d` : `LIST -d ${path}`, this.parseList).then(list => {
-                resolve(list[0])
-            }).catch(err => {
-                reject(err)
-            })
-        })
+        await this.prepareTransfer(this.ftp)
+        return (await this._requestListWithCommand(path === "" ? `LIST -d` : `LIST -d ${path}`, this.parseList))[0]
     }
 
     /**
@@ -567,14 +561,8 @@ export class Client {
      * Relies on the NLST command which is not standardized and may not work with all servers.
      */
     async nlist(path =""): Promise<string[]> {
-        return new Promise<string[]>(async (resolve, reject) => {
-            await this.prepareTransfer(this.ftp)
-            this._requestListWithCommand(path === "" ? `NLST` : `NLST ${path}`, text => text.split(/\r?\n/).filter(l => l)).then(list => {
-                resolve(list)
-            }).catch(err => {
-                reject(err)
-            })
-        })
+        await this.prepareTransfer(this.ftp)
+        return await this._requestListWithCommand(path === "" ? `NLST` : `NLST ${path}`, text => text.split(/\r?\n/).filter(l => l))
     }
 
     /**
