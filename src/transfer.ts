@@ -1,5 +1,5 @@
 import { EventEmitter } from "events"
-import { Readable, Transform, TransformCallback, Writable, pipeline } from "stream"
+import { Readable, Writable } from "stream"
 import { TLSSocket, connect as connectTLS } from "tls"
 import { FTPContext, FTPResponse, TaskResolver } from "./FtpContext"
 import { ProgressTracker, ProgressType } from "./ProgressTracker"
@@ -241,16 +241,35 @@ export function uploadFrom(source: Readable, config: TransferConfig): Promise<FT
                 config.ftp.log(`Uploading to ${describeAddress(dataSocket)} (${describeTLS(dataSocket)})`)
                 resolver.onDataStart(config.remotePath, config.type)
                 // clsoe source stream when stopAt is reached   
-                pipeline(
-                    source,
-                    new StopTransform(() => source?.destroy(), config.stopAt),
-                    dataSocket,
-                    err => {
-                    if (err) {
-                        resolver.onError(task, err)
-                    } else {
-                        resolver.onDataDone(task)
+                // pipeline(
+                //     source,
+                //     dataSocket,
+                //     err => {
+                //     if (err) {
+                //         resolver.onError(task, err)
+                //     } else {
+                //         resolver.onDataDone(task)
+                //     }
+                // })
+                let endedIntentionally = false
+                let bytesWritten = 0
+                source.on("data", (chunk) => {
+                    if(config.stopAt) {
+                        bytesWritten += chunk.length
+                        if (bytesWritten >= config.stopAt) {
+                            chunk = chunk.slice(0, config.stopAt - bytesWritten)
+                            endedIntentionally = true
+                            source.destroy()
+                        }
                     }
+                    dataSocket.write(chunk)
+                })
+                source.on("end", () => {
+                    resolver.onDataDone(task)
+                })
+                source.on("error", (err) => {
+                    if(endedIntentionally) return
+                    resolver.onError(task, err)
                 })
             })
         }
@@ -283,13 +302,6 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
             resolver.onDataStart(config.remotePath, config.type)
             // pipeline(
             //     dataSocket,
-            //     new StopTransform(() => {
-            //         dataSocket.removeAllListeners("timeout")
-            //         dataSocket.removeAllListeners("error")
-            //         dataSocket.on("error", () => {}) // ignore all errors from now on
-            //         dataSocket.on("timeout", () => dataSocket.destroy())
-            //         dataSocket.end()
-            //     }, config.stopAt),
             //     destination, err => {
             //     if (err) {
             //         resolver.onError(task, err)
@@ -305,17 +317,16 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
                     if (bytesWritten >= config.stopAt) {
                         chunk = chunk.slice(0, config.stopAt - bytesWritten)
                         endedIntentionally = true
-                        dataSocket.end()
+                        dataSocket.destroy()
                     }
                 }
+                destination.write(chunk)
             })
             dataSocket.on("end", () => {
-                console.log("end")
                 resolver.onDataDone(task)
             })
             dataSocket.on("error", (err) => {
                 if(endedIntentionally) return
-                console.log("error")
                 resolver.onError(task, err)
             })
         }
@@ -347,22 +358,5 @@ function onConditionOrEvent(condition: boolean, emitter: EventEmitter, eventName
     }
     else {
         emitter.once(eventName, () => action())
-    }
-}
-
-class StopTransform extends Transform {
-    private bytesWritten = 0
-
-    constructor(private close: () => void, private stopAt?: number) {
-        super()
-    }
-
-    _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-        this.bytesWritten += chunk.length
-        if (this.stopAt && this.bytesWritten >= this.stopAt) {
-            chunk = chunk.slice(0, this.stopAt - this.bytesWritten)
-            this.close()
-        }
-        callback(null, chunk)
     }
 }
