@@ -131,7 +131,11 @@ export function connectForPassiveTransfer(host: string, port: number, ftp: FTPCo
 class TransferResolver {
 
     protected response: FTPResponse | undefined = undefined
-    protected dataTransferDone = false
+    protected _dataTransferDone = false
+    
+    public get dataTransferDone() {
+        return this._dataTransferDone;
+    }
 
     /**
      * Instantiate a TransferResolver
@@ -170,7 +174,7 @@ class TransferResolver {
         if (this.ftp.dataSocket) {
             this.ftp.dataSocket.setTimeout(0)
         }
-        this.dataTransferDone = true
+        this._dataTransferDone = true
         this.tryResolve(task)
     }
 
@@ -204,7 +208,7 @@ class TransferResolver {
 
     protected tryResolve(task: TaskResolver) {
         // To resolve, we need both control and data connection to report that the transfer is done.
-        const canResolve = this.dataTransferDone && this.response !== undefined
+        const canResolve = this._dataTransferDone && this.response !== undefined
         if (canResolve) {
             this.ftp.dataSocket = undefined
             task.resolve(this.response)
@@ -269,6 +273,7 @@ export function uploadFrom(source: Readable, config: TransferConfig): Promise<FT
                     dataSocket.write(chunk)
                 })
                 dataSocket.on("close", () => {
+                    if(resolver.dataTransferDone) return;
                     if(endedIntentionally) {
                         resolver.onDataDone(task)
                     } else {
@@ -338,6 +343,7 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
                 destination.write(chunk)
             })
             dataSocket.on("close", () => {
+                if(resolver.dataTransferDone) return;
                 if(endedIntentionally) {
                     resolver.onDataDone(task)
                 } else {
