@@ -61,7 +61,7 @@ export class FTPMaster {
             const client = new Client()
             this.clients.push({
                 client,
-                inUse: false,
+                inUse: true,
             })
         }
 
@@ -88,6 +88,7 @@ export class FTPMaster {
     public async connectClients() {
         for(let i = 0; i < this.maxConnections; i++) {
             await this.connectClient(this.clients[i].client)
+            this.clients[i].inUse = false
         }
     }
 
