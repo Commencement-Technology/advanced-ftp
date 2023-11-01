@@ -1,10 +1,10 @@
 import { EventEmitter } from "events"
-import { describeAddress, describeTLS, ipIsPrivateV4Address } from "./netUtils"
-import { Writable, Readable, pipeline } from "stream"
+import { Readable, Transform, TransformCallback, Writable, pipeline } from "stream"
 import { TLSSocket, connect as connectTLS } from "tls"
 import { FTPContext, FTPResponse, TaskResolver } from "./FtpContext"
 import { ProgressTracker, ProgressType } from "./ProgressTracker"
-import { positiveIntermediate, positiveCompletion } from "./parseControlResponse"
+import { describeAddress, describeTLS, ipIsPrivateV4Address } from "./netUtils"
+import { positiveCompletion, positiveIntermediate } from "./parseControlResponse"
 
 export type UploadCommand = "STOR" | "APPE"
 
@@ -218,6 +218,7 @@ export interface TransferConfig {
     type: ProgressType
     ftp: FTPContext
     tracker: ProgressTracker
+    stopAt?: number
 }
 
 export function uploadFrom(source: Readable, config: TransferConfig): Promise<FTPResponse> {
@@ -239,7 +240,12 @@ export function uploadFrom(source: Readable, config: TransferConfig): Promise<FT
             onConditionOrEvent(canUpload, dataSocket, "secureConnect", () => {
                 config.ftp.log(`Uploading to ${describeAddress(dataSocket)} (${describeTLS(dataSocket)})`)
                 resolver.onDataStart(config.remotePath, config.type)
-                pipeline(source, dataSocket, err => {
+                // clsoe source stream when stopAt is reached   
+                pipeline(
+                    source,
+                    new StopTransform(() => source?.destroy(), config.stopAt),
+                    dataSocket,
+                    err => {
                     if (err) {
                         resolver.onError(task, err)
                     } else {
@@ -275,7 +281,10 @@ export function downloadTo(destination: Writable, config: TransferConfig): Promi
             }
             config.ftp.log(`Downloading from ${describeAddress(dataSocket)} (${describeTLS(dataSocket)})`)
             resolver.onDataStart(config.remotePath, config.type)
-            pipeline(dataSocket, destination, err => {
+            pipeline(
+                dataSocket,
+                new StopTransform(() => dataSocket?.destroy(), config.stopAt),
+                destination, err => {
                 if (err) {
                     resolver.onError(task, err)
                 } else {
@@ -311,5 +320,22 @@ function onConditionOrEvent(condition: boolean, emitter: EventEmitter, eventName
     }
     else {
         emitter.once(eventName, () => action())
+    }
+}
+
+class StopTransform extends Transform {
+    private bytesWritten = 0
+
+    constructor(private close: () => void, private stopAt?: number) {
+        super()
+    }
+
+    _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
+        this.bytesWritten += chunk.length
+        if (this.stopAt && this.bytesWritten >= this.stopAt) {
+            chunk.slice(0, this.stopAt - this.bytesWritten)
+            this.close()
+        }
+        callback(null, chunk)
     }
 }
