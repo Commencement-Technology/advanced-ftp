@@ -89,6 +89,10 @@ Set whether to automatically reconnect when the connection is lost. If true, the
 
 Set the maximum number of connections (Clients) to the server. If the number of connections is greater than the maximum, the master will close those connections, prefering the ones with no running tasks but forcing the ones with running tasks to close if necessary. New connections will be opened if `FTPMaster#autoReconnect` is true. Default is 1.
 
+`on(event: "error", listener: (err: Error) => void): this`
+
+Handle errors. This is currently only used for connection errors.
+
 ## Client API
 
 `new Client(timeout = 30000)`

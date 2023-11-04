@@ -1,3 +1,4 @@
+import { EventEmitter } from "stream"
 import { AccessOptions, Client } from "./Client"
 
 interface QueuedFTPTask<T = any> {
@@ -7,7 +8,7 @@ interface QueuedFTPTask<T = any> {
     stack: string | undefined
 }
 
-export class FTPMaster {
+export class FTPMaster extends EventEmitter {
     private accessOptions: AccessOptions
     private _maxConnections: number
     private _autoReconnect: boolean
@@ -15,6 +16,7 @@ export class FTPMaster {
     private _clients: {client: Client, inUse: boolean | string}[] = []
 
     constructor(accessOptions: AccessOptions, maxConnections = 1, autoReconnect = true) {
+        super()
         this.accessOptions = accessOptions
         this._autoReconnect = autoReconnect
         this._maxConnections = maxConnections
@@ -81,7 +83,9 @@ export class FTPMaster {
         this.clients.reverse()
 
         if(this.autoReconnect) {
-            this.connectClients()
+            this.connectClients().catch((err) => {
+                this.emit("error", err)
+            })
         }
     }
 
@@ -98,12 +102,16 @@ export class FTPMaster {
             this.clients.find(x => x.client === client)!.inUse = false
             client.ftp.socket.on("close", () => {
                 if(this.autoReconnect) {
-                    this.connectClient(client)
+                    this.connectClient(client).catch((err) => {
+                        this.emit("error", err)
+                    })
                 }
             })
             client.ftp.socket.on("end", () => {
                 if(this.autoReconnect) {
-                    this.connectClient(client)
+                    this.connectClient(client).catch((err) => {
+                        this.emit("error", err)
+                    })
                 }
             })
             this.try_dequeue()
