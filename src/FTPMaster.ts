@@ -12,7 +12,7 @@ export class FTPMaster extends EventEmitter {
     private accessOptions: AccessOptions
     private _maxConnections: number
     private _autoReconnect: boolean
-    private queue: QueuedFTPTask[] = []
+    private _queue: QueuedFTPTask[] = []
     private _clients: {client: Client, inUse: boolean | string}[] = []
 
     constructor(accessOptions: AccessOptions, maxConnections = 1, autoReconnect = true) {
@@ -27,14 +27,18 @@ export class FTPMaster extends EventEmitter {
      * clear queue by rejecting all promises
      */
     public clearQueue() {
-        for(let i = 0; i < this.queue.length; i++) {
-            this.queue[i].reject("Queue cleared")
+        for(let i = 0; i < this._queue.length; i++) {
+            this._queue[i].reject("Queue cleared")
         }
-        this.queue = []
+        this._queue = []
     }
 
     public get clients(): {client: Client, inUse: boolean | string}[] {
         return this._clients
+    }
+
+    public get queue(): QueuedFTPTask[] {
+        return this._queue
     }
 
     private set clients(clients: {client: Client, inUse: boolean | string}[]) {
@@ -122,14 +126,14 @@ export class FTPMaster extends EventEmitter {
         const stack = new Error().stack
         return new Promise((resolve, reject) => {
             if(priority) {
-                this.queue.unshift({
+                this._queue.unshift({
                     promise,
                     resolve,
                     reject,
                     stack
                 })
             } else {
-                this.queue.push({
+                this._queue.push({
                     promise,
                     resolve,
                     reject,
@@ -144,7 +148,7 @@ export class FTPMaster extends EventEmitter {
         const client = this.clients.find(x => !x.inUse && !x.client.closed)
         if(!client) return false
         
-        const item = this.queue.shift()
+        const item = this._queue.shift()
         if (!item) return false
 
         client.inUse = item.stack ?? true
