@@ -73,9 +73,11 @@ The clients will be connected when calling `connectClients()` or automatically i
 
 Reconnect all clients.
 
-`enqueue(task: (client: Client) => Promise<T>, [priority: boolean = false]): Promise<T>`
+`enqueue(task: (client: Client) => Promise<T>, [priority: boolean = false]): Promise<T> & {abort: () => void}`
 
 Adds a task to the queue. The task will be executed when a client is available. If no client is available, the task will be executed when a client is released. If `priority` is true, the task will be executed as soon as possible otherwise the task will be executed in the order they were added to the queue.
+
+The returning Promise has an `abort` method that can be used to abort the task. The Promise will be rejected with an `AbortError` if the task is aborted. Aborting will remove the task from the queue if it has not been executed yet or cancel the data transfer if it is currently running.
 
 `clearQueue(): void`
 

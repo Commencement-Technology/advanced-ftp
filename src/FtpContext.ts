@@ -110,7 +110,7 @@ export class FTPContext {
         this._closingError = err
         // Close the sockets but don't fully reset this context to preserve `this._closingError`.
         this._closeControlSocket()
-        this._closeSocket(this._dataSocket)
+        this.closeSocket(this._dataSocket)
         // Give the user's task a chance to react, maybe cleanup resources.
         this._passToHandler(err)
         // The task might not have been rejected by the user after receiving the error.
@@ -187,7 +187,7 @@ export class FTPContext {
      * Set the socket for the data connection. This will automatically close the former data socket.
      */
     set dataSocket(socket: Socket | TLSSocket | undefined) {
-        this._closeSocket(this._dataSocket)
+        this.closeSocket(this._dataSocket)
         if (socket) {
             // Don't set a timeout yet. Timeout data socket should be activated when data transmission starts
             // and timeout on control socket is deactivated.
@@ -367,7 +367,7 @@ export class FTPContext {
                 this.closeWithError(error)
             } else {
                 //only close data socket, not the control socket as well
-                this._closeSocket(socket)
+                this.closeSocket(socket)
                 this._passToHandler(error)
             }
         })
@@ -377,7 +377,7 @@ export class FTPContext {
                     this.closeWithError(new Error(`Socket closed due to transmission error (${identifier})`))
                 } else {
                     //only close data socket, not the control socket as well
-                    this._closeSocket(socket)
+                    this.closeSocket(socket)
                     this._passToHandler(new Error(`Socket closed due to transmission error (${identifier})`))
                 }
             }
@@ -387,7 +387,7 @@ export class FTPContext {
             if(identifier == "control socket") {
                 this.closeWithError(new Error(`Timeout (${identifier})`)) 
             } else {
-                this._closeSocket(socket)
+                this.closeSocket(socket)
                 this._passToHandler(new Error(`Timeout (${identifier})`))
             }
         })
@@ -400,14 +400,14 @@ export class FTPContext {
         this._removeSocketListeners(this._socket)
         this._socket.on("error", doNothing)
         this.send("QUIT")
-        this._closeSocket(this._socket)
+        this.closeSocket(this._socket)
     }
 
     /**
      * Close a socket. Sends FIN and ignores any error.
      * @protected
      */
-    protected _closeSocket(socket: Socket | undefined) {
+    public closeSocket(socket: Socket | undefined) {
         if (socket) {
             this._removeSocketListeners(socket)
             socket.on("error", doNothing)

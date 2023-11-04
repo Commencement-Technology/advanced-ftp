@@ -6,7 +6,10 @@ interface QueuedFTPTask<T = any> {
     resolve: (value: T) => void
     reject: (reason?: any) => void
     stack: string | undefined
+    abortSignal: AbortSignal
 }
+
+type EnqueueResult<T> = Promise<T> & {abort: () => void}
 
 export class FTPMaster extends EventEmitter {
     private accessOptions: AccessOptions
@@ -122,26 +125,34 @@ export class FTPMaster extends EventEmitter {
         }
     }
 
-    public enqueue<T = void>(promise: (client: Client) => Promise<T>, priority = false): Promise<T> {
+    public enqueue<T = void>(promise: (client: Client) => Promise<T>, priority = false): EnqueueResult<T> {
         const stack = new Error().stack
-        return new Promise((resolve, reject) => {
+        let abortController = new AbortController()
+        let retpromise = new Promise<T>((resolve, reject) => {
+            let task = {
+                promise,
+                resolve,
+                reject,
+                stack,
+                abortSignal: abortController.signal
+            }
+            abortController.signal.addEventListener("abort", () => {
+                task.reject(new AbortError("Aborted"))
+                if(this._queue.includes(task)) {
+                    this._queue.splice(this._queue.indexOf(task), 1)
+                }
+            })
             if(priority) {
-                this._queue.unshift({
-                    promise,
-                    resolve,
-                    reject,
-                    stack
-                })
+                this._queue.unshift(task)
             } else {
-                this._queue.push({
-                    promise,
-                    resolve,
-                    reject,
-                    stack
-                })
+                this._queue.push(task)
             }
             this.try_dequeue()
-        })
+        }) as EnqueueResult<T>
+        retpromise.abort = () => {
+            abortController.abort()
+        }
+        return retpromise
     }
 
     private async try_dequeue(): Promise<boolean> {
@@ -152,9 +163,22 @@ export class FTPMaster extends EventEmitter {
         if (!item) return false
 
         client.inUse = item.stack ?? true
+        item.abortSignal.addEventListener("abort", () => {
+            //kill data connection
+            client.client.ftp.closeSocket(client.client.ftp.dataSocket)
+        })
+
         item.promise(client.client).then((value) => {
+            if(item.abortSignal.aborted) {
+                item.reject(new AbortError("Aborted"))
+                return
+            }
             item.resolve(value)
         }).catch((err) => {
+            if(item.abortSignal.aborted) {
+                item.reject(new AbortError("Aborted"))
+                return
+            }
             item.reject(err)
         }).finally(() => {
             if(client) client.inUse = false
@@ -164,4 +188,11 @@ export class FTPMaster extends EventEmitter {
         return true
     }
 
+}
+
+export class AbortError extends Error {
+    constructor(message?: string) {
+        super(message)
+        this.name = "AbortError"
+    }
 }
