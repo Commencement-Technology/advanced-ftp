@@ -11,6 +11,13 @@ interface QueuedFTPTask<T = any> {
 
 type EnqueueResult<T> = Promise<T> & {abort: () => void}
 
+export class AbortError extends Error {
+    constructor(message?: string) {
+        super(message)
+        this.name = "AbortError"
+    }
+}
+
 export class FTPMaster extends EventEmitter {
     private accessOptions: AccessOptions
     private _maxConnections: number
@@ -127,9 +134,9 @@ export class FTPMaster extends EventEmitter {
 
     public enqueue<T = void>(promise: (client: Client) => Promise<T>, priority = false): EnqueueResult<T> {
         const stack = new Error().stack
-        let abortController = new AbortController()
-        let retpromise = new Promise<T>((resolve, reject) => {
-            let task = {
+        const abortController = new AbortController()
+        const retpromise = new Promise<T>((resolve, reject) => {
+            const task = {
                 promise,
                 resolve,
                 reject,
@@ -188,11 +195,4 @@ export class FTPMaster extends EventEmitter {
         return true
     }
 
-}
-
-export class AbortError extends Error {
-    constructor(message?: string) {
-        super(message)
-        this.name = "AbortError"
-    }
 }
