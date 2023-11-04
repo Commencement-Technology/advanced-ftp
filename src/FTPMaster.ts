@@ -33,12 +33,12 @@ export class FTPMaster extends EventEmitter {
         this._queue = []
     }
 
-    public get clients(): {client: Client, inUse: boolean | string}[] {
-        return this._clients
-    }
-
     public get queue(): QueuedFTPTask[] {
         return this._queue
+    }
+
+    public get clients(): {client: Client, inUse: boolean | string}[] {
+        return this._clients
     }
 
     private set clients(clients: {client: Client, inUse: boolean | string}[]) {
