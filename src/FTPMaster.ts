@@ -112,8 +112,6 @@ export class FTPMaster extends EventEmitter {
     private async connectClient(client: Client) {
         if(client.closed) {
             this.clients.find(x => x.client === client)!.inUse = true
-            await client.access(this.accessOptions)
-            this.clients.find(x => x.client === client)!.inUse = false
             client.ftp.socket.on("close", () => {
                 if(this.autoReconnect) {
                     this.connectClient(client).catch((err) => {
@@ -128,6 +126,8 @@ export class FTPMaster extends EventEmitter {
                     })
                 }
             })
+            await client.access(this.accessOptions)
+            this.clients.find(x => x.client === client)!.inUse = false
             this.try_dequeue()
         }
     }
