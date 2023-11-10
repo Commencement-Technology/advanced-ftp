@@ -1,8 +1,8 @@
 # Advanced FTP
 
-<!--[![npm version](https://img.shields.io/npm/v/basic-ftp.svg)](https://www.npmjs.com/package/basic-ftp)
-[![npm downloads](https://img.shields.io/npm/dw/basic-ftp)](https://www.npmjs.com/package/basic-ftp)
-[![Node.js CI](https://github.com/patrickjuchli/basic-ftp/actions/workflows/nodejs.yml/badge.svg)](https://github.com/patrickjuchli/basic-ftp/actions/workflows/nodejs.yml)-->
+[![npm version](https://img.shields.io/npm/v/advanced-ftp.svg)](https://www.npmjs.com/package/advanced-ftp)
+[![npm downloads](https://img.shields.io/npm/dw/advanced-ftp)](https://www.npmjs.com/package/advanced-ftp)
+[![Node.js CI](https://github.com/RythenGlyth/advanced-ftp/actions/workflows/nodejs.yml/badge.svg)](https://github.com/RythenGlyth/advanced-ftp/actions/workflows/nodejs.yml)
 
 This is an FTP client library for Node.js. It supports FTPS over TLS, Passive Mode over IPv6, has a Promise-based API, and offers methods to operate on whole directories.
 
